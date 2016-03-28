@@ -435,10 +435,22 @@ public class LensQueryCommands extends BaseLensCommand {
     @CliOption(key = {"", "prepare_handle"}, mandatory = true, help = "Prepare handle to execute") String phandle,
     @CliOption(key = {"async"}, mandatory = false, unspecifiedDefaultValue = "false",
       specifiedDefaultValue = "true", help = "<async>") boolean async,
-    @CliOption(key = {"name"}, mandatory = false, help = "<query-name>") String queryName) {
+    @CliOption(key = {"name"}, mandatory = false, help = "<query-name>") String queryName) throws LensAPIException {
+    PrettyPrintable cliOutput;
     if (async) {
-      QueryHandle handle = getClient().executePrepared(QueryPrepareHandle.fromString(phandle), queryName);
-      return handle.getHandleId().toString();
+      try{
+        QueryHandle handle = getClient().executePrepared(QueryPrepareHandle.fromString(phandle), queryName);
+        return handle.getHandleId().toString();
+      } catch (final LensAPIException e) {
+
+        BriefError briefError = new BriefError(e.getLensAPIErrorCode(), e.getLensAPIErrorMessage());
+        cliOutput = new IdBriefErrorTemplate(IdBriefErrorTemplateKey.REQUEST_ID, e.getLensAPIRequestId(), briefError);
+
+      } catch (final LensBriefErrorException e) {
+        cliOutput = e.getIdBriefErrorTemplate();
+      }
+      return cliOutput.toPrettyString();
+
     } else {
       try {
         LensClient.LensClientResultSetWithStats result = getClient().getResultsFromPrepared(

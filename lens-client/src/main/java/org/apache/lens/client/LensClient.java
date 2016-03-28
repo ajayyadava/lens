@@ -592,12 +592,13 @@ public class LensClient {
     return statement.getPreparedQuery(phandle);
   }
 
-  public LensClientResultSetWithStats getResultsFromPrepared(QueryPrepareHandle phandle, String queryName) {
+  public LensClientResultSetWithStats getResultsFromPrepared(QueryPrepareHandle phandle,
+                                                             String queryName) throws LensAPIException {
     QueryHandle qh = statement.executeQuery(phandle, true, queryName);
     return getResultsFromHandle(qh, true);
   }
 
-  public QueryHandle executePrepared(QueryPrepareHandle phandle, String queryName) {
+  public QueryHandle executePrepared(QueryPrepareHandle phandle, String queryName) throws LensAPIException {
     return statement.executeQuery(phandle, false, queryName);
   }
 

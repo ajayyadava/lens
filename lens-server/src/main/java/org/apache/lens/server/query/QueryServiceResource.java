@@ -658,12 +658,14 @@ public class QueryServiceResource {
   @Consumes({MediaType.MULTIPART_FORM_DATA})
   @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN})
   @MultiPurposeResource(formParamName = "operation")
-  public QuerySubmitResult executePrepared(@FormDataParam("sessionid") LensSessionHandle sessionid,
+  public LensAPIResult<QuerySubmitResult> executePrepared(@FormDataParam("sessionid") LensSessionHandle sessionid,
     @PathParam("prepareHandle") String prepareHandle,
     @DefaultValue("EXECUTE") @FormDataParam("operation") String operation, @FormDataParam("conf") LensConf conf,
     @DefaultValue("30000") @FormDataParam("timeoutmillis") Long timeoutmillis,
     @DefaultValue("") @FormDataParam("queryName") String queryName) {
+    final String requestId = this.logSegregationContext.getLogSegragationId();
     checkSessionId(sessionid);
+    QuerySubmitResult result;
     try {
       SubmitOp sop = null;
       try {
@@ -671,17 +673,22 @@ public class QueryServiceResource {
       } catch (IllegalArgumentException e) {
         log.warn("illegal argument for submit operation: " + operation, e);
       }
+
       if (sop == null) {
         throw new BadRequestException("Invalid operation type: " + operation + submitPreparedClue);
       }
       switch (sop) {
       case EXECUTE:
-        return queryServer.executePrepareAsync(sessionid, getPrepareHandle(prepareHandle), conf, queryName);
+        result = queryServer.executePrepareAsync(sessionid, getPrepareHandle(prepareHandle), conf, queryName);
+        break;
       case EXECUTE_WITH_TIMEOUT:
-        return queryServer.executePrepare(sessionid, getPrepareHandle(prepareHandle), timeoutmillis, conf, queryName);
+        result = queryServer.executePrepare(sessionid, getPrepareHandle(prepareHandle), timeoutmillis, conf, queryName);
+        break;
       default:
         throw new BadRequestException("Invalid operation type: " + operation + submitPreparedClue);
       }
+
+      return LensAPIResult.composedOf(null, requestId, result);
     } catch (LensException e) {
       throw new WebApplicationException(e);
     }

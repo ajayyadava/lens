@@ -109,8 +109,9 @@ public class LensStatement {
    * @param queryName              the query name
    * @return the query handle
    */
-  public QueryHandle executeQuery(QueryPrepareHandle phandle, boolean waitForQueryToComplete, String queryName) {
-    QueryHandle handle = executeQuery(phandle, queryName);
+  public QueryHandle executeQuery(QueryPrepareHandle phandle, boolean waitForQueryToComplete,
+                                  String queryName) throws LensAPIException {
+    QueryHandle handle = executeQuery(phandle, queryName).getData();
 
     if (waitForQueryToComplete) {
       waitForQueryToComplete(handle);
@@ -328,9 +329,9 @@ public class LensStatement {
    * @param queryName the query name
    * @return the query handle
    */
-  public QueryHandle executeQuery(QueryPrepareHandle phandle, String queryName) {
+  public LensAPIResult<QueryHandle> executeQuery(QueryPrepareHandle phandle, String queryName) throws LensAPIException {
     if (!connection.isOpen()) {
-      throw new IllegalStateException("Lens Connection has to be " + "established before querying");
+      throw new IllegalStateException("Lens Connection has to be established before querying");
     }
 
     Client client = connection.buildClient();
@@ -343,10 +344,12 @@ public class LensStatement {
       : queryName));
     mp.bodyPart(new FormDataBodyPart(FormDataContentDisposition.name("conf").fileName("conf").build(), new LensConf(),
       MediaType.APPLICATION_XML_TYPE));
-    QueryHandle handle = target.request()
-      .post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE), QueryHandle.class);
+    Response response = target.request().post(Entity.entity(mp, MediaType.MULTIPART_FORM_DATA_TYPE));
+    if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+      return response.readEntity(new GenericType<LensAPIResult<QueryHandle>>() {});
+    }
 
-    return handle;
+    throw new LensAPIException(response.readEntity(LensAPIResult.class));
   }
 
   /**
