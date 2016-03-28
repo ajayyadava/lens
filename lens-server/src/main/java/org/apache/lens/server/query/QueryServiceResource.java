@@ -148,12 +148,12 @@ public class QueryServiceResource {
    * @param driver    Get queries submitted on a specific driver.
    * @param fromDate  from date to search queries in a time range, the range is inclusive(submitTime &gt;= fromDate)
    * @param toDate    to date to search queries in a time range, the range is inclusive(toDate &gt;= submitTime)
-   * @return List of {@link QueryHandle} objects
+   * @return List of {@link LensQuery} objects
    */
   @GET
   @Path("queries")
   @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN})
-  public List<QueryHandle> getAllQueries(@QueryParam("sessionid") LensSessionHandle sessionid,
+  public List<LensQuery> getAllQueries(@QueryParam("sessionid") LensSessionHandle sessionid,
     @DefaultValue("") @QueryParam("state") String state, @DefaultValue("") @QueryParam("queryName") String queryName,
     @DefaultValue("") @QueryParam("user") String user, @DefaultValue("") @QueryParam("driver") String driver,
     @DefaultValue("-1") @QueryParam("fromDate") long fromDate, @DefaultValue("-1") @QueryParam("toDate") long toDate) {
@@ -274,13 +274,13 @@ public class QueryServiceResource {
     @DefaultValue("-1") @QueryParam("fromDate") long fromDate, @DefaultValue("-1") @QueryParam("toDate") long toDate) {
     checkSessionId(sessionid);
     int numCancelled = 0;
-    List<QueryHandle> handles = null;
+    List<LensQuery> handles = null;
     boolean failed = false;
     try {
-      handles = getAllQueries(sessionid, state, queryName, user, driver, fromDate,
+      handles = queryServer.getAllQueries(sessionid, state, queryName, user, driver, fromDate,
         toDate == -1L ? Long.MAX_VALUE : toDate);
-      for (QueryHandle handle : handles) {
-        if (cancelQuery(sessionid, handle)) {
+      for (LensQuery query : handles) {
+        if (cancelQuery(sessionid, query.getQueryHandle())) {
           numCancelled++;
         }
       }

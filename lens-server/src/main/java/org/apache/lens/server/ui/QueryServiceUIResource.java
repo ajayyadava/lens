@@ -115,7 +115,7 @@ public class QueryServiceUIResource {
   @GET
   @Path("queries")
   @Produces({MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN})
-  public List<QueryHandle> getAllQueries(@QueryParam("publicId") UUID publicId,
+  public List<LensQuery> getAllQueries(@QueryParam("publicId") UUID publicId,
     @DefaultValue("") @QueryParam("state") String state, @DefaultValue("") @QueryParam("user") String user,
     @DefaultValue("") @QueryParam("driver") String driver, @DefaultValue("") @QueryParam("queryName") String queryName,
     @DefaultValue("-1") @QueryParam("fromDate") long fromDate, @DefaultValue("-1") @QueryParam("toDate") long toDate) {

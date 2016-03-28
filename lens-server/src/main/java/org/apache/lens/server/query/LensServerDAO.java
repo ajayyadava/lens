@@ -19,14 +19,12 @@
 package org.apache.lens.server.query;
 
 import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.sql.DataSource;
 
-import org.apache.lens.api.query.QueryHandle;
 import org.apache.lens.server.api.error.LensException;
 import org.apache.lens.server.api.query.FinishedLensQuery;
 import org.apache.lens.server.util.UtilityMethods;
@@ -35,6 +33,7 @@ import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.ResultSetHandler;
 import org.apache.commons.dbutils.handlers.BeanHandler;
+import org.apache.commons.dbutils.handlers.BeanListHandler;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 
@@ -165,11 +164,11 @@ public class LensServerDAO {
    * @return the list
    * @throws LensException the lens exception
    */
-  public List<QueryHandle> findFinishedQueries(String state, String user, String driverName, String queryName,
-    long fromDate, long toDate) throws LensException {
+  public List<FinishedLensQuery> findFinishedQueries(String state, String user, String driverName, String queryName,
+                                             long fromDate, long toDate) throws LensException {
     boolean addFilter = StringUtils.isNotBlank(state) || StringUtils.isNotBlank(user)
       || StringUtils.isNotBlank(queryName);
-    StringBuilder builder = new StringBuilder("SELECT handle FROM finished_queries");
+    StringBuilder builder = new StringBuilder("SELECT * FROM finished_queries");
     List<Object> params = null;
     if (addFilter) {
       builder.append(" WHERE ");
@@ -202,21 +201,7 @@ public class LensServerDAO {
       builder.append(StringUtils.join(filters, " AND "));
     }
 
-    ResultSetHandler<List<QueryHandle>> resultSetHandler = new ResultSetHandler<List<QueryHandle>>() {
-      @Override
-      public List<QueryHandle> handle(ResultSet resultSet) throws SQLException {
-        List<QueryHandle> queryHandleList = new ArrayList<QueryHandle>();
-        while (resultSet.next()) {
-          String handle = resultSet.getString(1);
-          try {
-            queryHandleList.add(QueryHandle.fromString(handle));
-          } catch (IllegalArgumentException exc) {
-            log.warn("Warning invalid query handle found in DB " + handle);
-          }
-        }
-        return queryHandleList;
-      }
-    };
+    ResultSetHandler<List<FinishedLensQuery>> resultSetHandler = new BeanListHandler<>(FinishedLensQuery.class);
 
     QueryRunner runner = new QueryRunner(ds);
     String query = builder.toString();

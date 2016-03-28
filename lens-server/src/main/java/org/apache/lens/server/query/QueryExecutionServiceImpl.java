@@ -87,7 +87,6 @@ import org.slf4j.LoggerFactory;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -2228,7 +2227,7 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
    * java.lang.String, java.lang.String, java.lang.String, java.lang.String, long, long)
    */
   @Override
-  public List<QueryHandle> getAllQueries(LensSessionHandle sessionHandle, String state, String userName, String driver,
+  public List<LensQuery> getAllQueries(LensSessionHandle sessionHandle, String state, String userName, String driver,
     String queryName, long fromDate, long toDate) throws LensException {
     validateTimeRange(fromDate, toDate);
     userName = UtilityMethods.removeDomain(userName);
@@ -2249,11 +2248,15 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
       }
       boolean filterByDriver = StringUtils.isNotBlank(driver);
 
-      List<QueryHandle> all = new ArrayList<QueryHandle>(allQueries.keySet());
-      Iterator<QueryHandle> itr = all.iterator();
+      List<LensQuery> all = new ArrayList<>();
+      for (QueryHandle handle : allQueries.keySet()) {
+        all.add(allQueries.get(handle).toLensQuery());
+      }
+
+      Iterator<LensQuery> itr = all.iterator();
       while (itr.hasNext()) {
-        QueryHandle q = itr.next();
-        QueryContext context = allQueries.get(q);
+        LensQuery q = itr.next();
+        QueryContext context = allQueries.get(q.getQueryHandle());
         long querySubmitTime = context.getSubmissionTime();
         if ((filterByStatus && status != context.getStatus().getStatus())
           || (filterByQueryName && !context.getQueryName().toLowerCase().contains(queryName))
@@ -2269,11 +2272,17 @@ public class QueryExecutionServiceImpl extends BaseLensService implements QueryE
         if ("all".equalsIgnoreCase(userName)) {
           userName = null;
         }
-        List<QueryHandle> persistedQueries = lensServerDao.findFinishedQueries(state, userName, driver, queryName,
+        List<FinishedLensQuery> persistedQueries = lensServerDao.findFinishedQueries(state, userName, driver, queryName,
           fromDate, toDate);
         if (persistedQueries != null && !persistedQueries.isEmpty()) {
           log.info("Adding persisted queries {}", persistedQueries.size());
-          all.addAll(persistedQueries);
+          // convert finished queries to LensQueries
+          LensQuery query;
+          for (FinishedLensQuery fq : persistedQueries) {
+            QueryHandle handle = QueryHandle.fromString(fq.getHandle());
+            query = getQueryContextOfFinishedQuery(handle).toLensQuery();
+            all.add(query);
+          }
         }
       }
 

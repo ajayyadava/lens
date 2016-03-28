@@ -232,10 +232,10 @@ public interface QueryExecutionService {
    * @param queryName     return queries containing the query name. If null, all queries will be returned
    * @param fromDate      start date of time range interval
    * @param toDate        end date of the time range interval
-   * @return List of query handles
+   * @return List of queries
    * @throws LensException the lens exception
    */
-  List<QueryHandle> getAllQueries(LensSessionHandle sessionHandle, String state, String user, String driver,
+  List<LensQuery> getAllQueries(LensSessionHandle sessionHandle, String state, String user, String driver,
     String queryName, long fromDate, long toDate) throws LensException;
 
   /**

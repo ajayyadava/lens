@@ -127,10 +127,11 @@ public class TestLensDAO {
     // Test find finished queries
     LensSessionHandle session = service.openSession("foo@localhost", "bar", new HashMap<String, String>());
 
-    List<QueryHandle> persistedHandles = service.lensServerDao.findFinishedQueries(null, null, null, null,
+    List<FinishedLensQuery> persistedHandles = service.lensServerDao.findFinishedQueries(null, null, null, null,
       submissionTime, System.currentTimeMillis());
     if (persistedHandles != null) {
-      for (QueryHandle handle : persistedHandles) {
+      for (FinishedLensQuery finishedQuery : persistedHandles) {
+        QueryHandle handle = QueryHandle.fromString(finishedQuery.getHandle());
         LensQuery query = service.getQuery(session, handle);
         if (!handle.getHandleId().toString().equals(finishedHandle)) {
           Assert.assertTrue(query.getStatus().finished(), query.getQueryHandle() + " STATUS="
@@ -140,11 +141,11 @@ public class TestLensDAO {
     }
 
     System.out.println("@@ State = " + queryContext.getStatus().getStatus().name());
-    List<QueryHandle> daoTestQueryHandles = service.lensServerDao.findFinishedQueries(finishedLensQuery.getStatus(),
-        queryContext.getSubmittedUser(), queryContext.getSelectedDriver().getFullyQualifiedName(), "daotestquery1", -1L,
-      Long.MAX_VALUE);
+    List<FinishedLensQuery> daoTestQueryHandles = service.lensServerDao.findFinishedQueries(
+      finishedLensQuery.getStatus(), queryContext.getSubmittedUser(),
+      queryContext.getSelectedDriver().getFullyQualifiedName(), "daotestquery1", -1L, Long.MAX_VALUE);
     Assert.assertEquals(daoTestQueryHandles.size(), 1);
-    Assert.assertEquals(daoTestQueryHandles.get(0).getHandleId().toString(), finishedHandle);
+    Assert.assertEquals(daoTestQueryHandles.get(0).getHandle(), finishedHandle);
     service.closeSession(session);
   }
 }
